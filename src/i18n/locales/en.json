@@ -1,0 +1,149 @@
+{
+  "common": {
+    "packages": "packages",
+    "installed": "installed",
+    "missing": "missing",
+    "loading": "Loading...",
+    "error": "Error",
+    "refresh": "Refresh",
+    "install": "Install",
+    "installing": "Installing...",
+    "search": "Search",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "clear": "Clear",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "nav": {
+    "managers": "Managers",
+    "diff": "Diff",
+    "settings": "Settings"
+  },
+  "manager": {
+    "header": {
+      "packages_count": "{{count}} packages",
+      "installed_count": "{{count}} installed",
+      "missing_count": "{{count}} missing",
+      "install_missing": "Install ({{count}})",
+      "install_tooltip": "Install {{count}} missing package",
+      "install_tooltip_plural": "Install {{count}} missing packages"
+    },
+    "filters": {
+      "search_placeholder": "Search packages...",
+      "all": "All",
+      "installed": "Installed",
+      "not_installed": "Not Installed"
+    },
+    "activity_log": {
+      "title": "Activity Log",
+      "clear_logs": "Clear logs",
+      "no_logs": "No installation activity yet"
+    }
+  },
+  "diff": {
+    "header": {
+      "title": "Diff Comparison",
+      "description": "View differences between configuration files and actual installation status",
+      "refresh": "Refresh",
+      "sync_all": "Install All Missing ({{count}})"
+    },
+    "summary": {
+      "to_install": "To Install",
+      "to_remove": "To Remove",
+      "managers": "Managers",
+      "all_synced": "All packages are in sync!",
+      "review_changes": "Review the changes below and install missing packages.",
+      "need_install": "Need to Install",
+      "extra_installed": "Extra Installed"
+    },
+    "card": {
+      "to_install": "To Install ({{count}})",
+      "to_remove": "To Remove ({{count}})",
+      "install_button": "Install ({{count}})",
+      "copy_button": "Copy Names",
+      "up_to_date": "Up to date - no changes needed",
+      "synchronized": "✓ Synchronized",
+      "install_missing": "Install Missing",
+      "to_install_badge": "{{count}} to install",
+      "extra_badge": "{{count}} extra"
+    },
+    "package_list": {
+      "to_install": "To Install",
+      "extra_installed": "Extra Installed"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your application preferences",
+    "appearance": {
+      "title": "Appearance",
+      "description": "Customize how the application looks",
+      "theme": "Theme",
+      "theme_description": "Choose your preferred color scheme",
+      "light": "Light",
+      "dark": "Dark",
+      "sidebar_width": "Sidebar Width"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language",
+      "label": "Display Language",
+      "label_description": "Select the language for the interface",
+      "chinese": "中文",
+      "english": "English"
+    },
+    "keyboard": {
+      "title": "Keyboard Navigation",
+      "description": "Customize keyboard shortcuts and navigation",
+      "mode_label": "Navigation Mode",
+      "mode_description": "Choose between standard arrow keys or Vim-style navigation",
+      "normal_mode": "Normal",
+      "vim_mode": "Vim",
+      "shortcuts_label": "Keyboard Shortcuts",
+      "search_shortcut": "Ctrl+K (Cmd+K on Mac) - Focus search box",
+      "list_shortcut": "Ctrl+L (Cmd+L on Mac) - Focus package list"
+    },
+    "package_config": {
+      "title": "Package Configuration",
+      "description": "Paths to package configuration files",
+      "config_dir": "Configuration Directory",
+      "browse": "Browse folder",
+      "help_text": "Location of your package configuration files (*.txt)"
+    },
+    "advanced": {
+      "title": "Advanced",
+      "description": "Advanced settings and actions",
+      "refresh_label": "Refresh All Data",
+      "refresh_description": "Re-scan all package managers and update status",
+      "refresh_button": "Refresh",
+      "refresh_tooltip": "Re-scan all package managers"
+    },
+    "about": {
+      "title": "About",
+      "description": "Application information",
+      "version": "Version",
+      "build": "Build",
+      "framework": "Framework"
+    }
+  },
+  "empty_state": {
+    "no_packages": {
+      "title": "No Packages Configured",
+      "description": "No packages have been configured for {{manager}} yet.",
+      "suggestion": "Add package names to the configuration file to get started.",
+      "action": "View Documentation"
+    },
+    "no_search_results": {
+      "title": "No Results Found",
+      "description": "No packages match \"{{query}}\".",
+      "suggestion": "Try adjusting your search terms or browse all packages.",
+      "action": "Clear Search"
+    },
+    "no_manager_selected": {
+      "title": "No Manager Selected",
+      "description": "Select a package manager from the sidebar to view packages.",
+      "suggestion": "Choose from the available package managers on the left."
+    }
+  }
+}

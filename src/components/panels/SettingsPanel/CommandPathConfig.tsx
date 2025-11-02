@@ -1,0 +1,266 @@
+import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { Loader2, Search, FolderOpen, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { type AppConfig, type CommandPathStatus, PACKAGE_MANAGERS } from '@/types/config';
+
+export function CommandPathConfig() {
+  const [config, setConfig] = useState<AppConfig>({ command_paths: {} });
+  const [detected, setDetected] = useState<Record<string, string>>({});
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      const cfg = await invoke<AppConfig>('get_config');
+      setConfig(cfg);
+    } catch (error) {
+      console.error('Failed to load config:', error);
+      toast.error('Failed to load configuration');
+    }
+  };
+
+  const handleAutoDetect = async () => {
+    setIsDetecting(true);
+    try {
+      const detectedPaths = await invoke<Record<string, string>>('auto_detect_commands');
+      setDetected(detectedPaths);
+
+      const detectedCount = Object.keys(detectedPaths).length;
+      toast.success(`Detected ${detectedCount} command${detectedCount !== 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Auto-detect failed:', error);
+      toast.error('Failed to auto-detect commands');
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
+  const handleApplyDetected = async () => {
+    setIsSaving(true);
+    try {
+      const newConfig = {
+        ...config,
+        command_paths: {
+          ...config.command_paths,
+          ...detected,
+        },
+      };
+      await invoke('save_config', { config: newConfig });
+      setConfig(newConfig);
+      toast.success('Applied detected paths');
+    } catch (error) {
+      console.error('Failed to save config:', error);
+      toast.error('Failed to save configuration');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSetPath = async (command: string, path: string) => {
+    try {
+      await invoke('set_command_path', { command, path });
+      setConfig({
+        ...config,
+        command_paths: {
+          ...config.command_paths,
+          [command]: path,
+        },
+      });
+      toast.success(`Set path for ${command}`);
+    } catch (error) {
+      console.error('Failed to set path:', error);
+      toast.error(`Failed to set path for ${command}`);
+    }
+  };
+
+  const handleBrowse = async (command: string) => {
+    try {
+      const selected = await open({
+        multiple: false,
+        directory: false,
+      });
+
+      if (selected) {
+        await handleSetPath(command, selected);
+      }
+    } catch (error) {
+      console.error('Failed to browse:', error);
+    }
+  };
+
+  const handleClearPath = async (command: string) => {
+    try {
+      const newPaths = { ...config.command_paths };
+      delete newPaths[command];
+
+      const newConfig = { ...config, command_paths: newPaths };
+      await invoke('save_config', { config: newConfig });
+      setConfig(newConfig);
+      toast.success(`Cleared path for ${command}`);
+    } catch (error) {
+      console.error('Failed to clear path:', error);
+      toast.error(`Failed to clear path for ${command}`);
+    }
+  };
+
+  const getCommandStatus = (command: string): CommandPathStatus => {
+    const configured = config.command_paths[command];
+    const detectedPath = detected[command];
+
+    return {
+      command,
+      displayName: PACKAGE_MANAGERS.find((pm) => pm.command === command)?.displayName || command,
+      configured: !!configured,
+      path: configured || null,
+      detected: detectedPath || null,
+      exists: !!configured || !!detectedPath,
+    };
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Command Path Configuration</CardTitle>
+            <CardDescription>
+              Configure paths to package manager commands for reliable detection
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
+              {isDetecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Detecting...
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 h-4 w-4" />
+                  Auto Detect
+                </>
+              )}
+            </Button>
+            {Object.keys(detected).length > 0 && (
+              <Button size="sm" onClick={handleApplyDetected} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  `Apply All Detected (${Object.keys(detected).length})`
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {PACKAGE_MANAGERS.map(({ command, displayName }) => {
+            const status = getCommandStatus(command);
+            const hasDetected = !!detected[command];
+            const currentPath = status.path || detected[command] || '';
+
+            return (
+              <div key={command} className="flex items-start gap-4 rounded-lg border p-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`path-${command}`} className="text-base font-semibold">
+                      {displayName}
+                    </Label>
+                    {status.configured ? (
+                      <Badge variant="default" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Configured
+                      </Badge>
+                    ) : hasDetected ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        Detected
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1">
+                        <XCircle className="h-3 w-3" />
+                        Not Found
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Input
+                      id={`path-${command}`}
+                      value={currentPath}
+                      onChange={(e) => {
+                        // Update local state for immediate feedback
+                        if (hasDetected) {
+                          setDetected({ ...detected, [command]: e.target.value });
+                        }
+                      }}
+                      placeholder={`Path to ${command} command`}
+                      className="font-mono text-sm select-text"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleBrowse(command)}
+                      title="Browse..."
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {hasDetected && !status.configured && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleSetPath(command, detected[command])}
+                      >
+                        Use Detected Path
+                      </Button>
+                    )}
+                    {currentPath && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleSetPath(command, currentPath)}
+                      >
+                        Save
+                      </Button>
+                    )}
+                    {status.configured && (
+                      <Button variant="ghost" size="sm" onClick={() => handleClearPath(command)}>
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 rounded-lg bg-muted/50 p-4">
+          <p className="text-sm text-muted-foreground">
+            <strong>Tip:</strong> If auto-detect doesn't find all commands, you can manually set
+            paths. The app will try to detect commands automatically first, but configured paths
+            always take priority.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
