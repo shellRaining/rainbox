@@ -1,4 +1,4 @@
-use crate::utils::get_dotfiles_root;
+use crate::utils::PathHelper;
 use tauri::Emitter;
 
 pub struct PackageOperation;
@@ -64,8 +64,7 @@ impl PackageOperation {
     use tauri_plugin_shell::process::CommandEvent;
     use tauri_plugin_shell::ShellExt;
 
-    let dotfiles_root = get_dotfiles_root();
-    let script_path = dotfiles_root.join("scripts").join("package-sync.sh");
+    let script_path = PathHelper::package_sync_script();
 
     if !script_path.exists() {
       return Err(format!("Script not found: {:?}", script_path));

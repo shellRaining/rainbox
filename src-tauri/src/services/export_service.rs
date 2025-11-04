@@ -1,4 +1,4 @@
-use crate::utils::{executor, get_dotfiles_root};
+use crate::utils::{executor, PathHelper};
 
 pub struct ExportService;
 
@@ -16,15 +16,14 @@ impl ExportService {
   /// 验证 dotfiles 环境
   #[allow(dead_code)]
   pub fn verify_environment() -> Result<(), String> {
-    let dotfiles_root = get_dotfiles_root();
-    let scripts_dir = dotfiles_root.join("scripts");
+    let scripts_dir = PathHelper::scripts_dir();
 
     if !scripts_dir.exists() {
       return Err(format!("Scripts directory not found: {:?}", scripts_dir));
     }
 
-    let package_sync = scripts_dir.join("package-sync.sh");
-    let export_packages = scripts_dir.join("export-packages.sh");
+    let package_sync = PathHelper::package_sync_script();
+    let export_packages = PathHelper::export_packages_script();
 
     if !package_sync.exists() {
       return Err(format!("package-sync.sh not found: {:?}", package_sync));

@@ -1,5 +1,5 @@
 use crate::constants::SUPPORTED_MANAGERS;
-use crate::utils::{check_installed_packages, get_dotfiles_root};
+use crate::utils::{check_installed_packages, get_dotfiles_root, PathHelper};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
@@ -9,7 +9,7 @@ impl DiagnosticService {
   /// 获取诊断信息
   pub fn get_diagnostic_info() -> Result<Value, String> {
     let dotfiles_root = get_dotfiles_root();
-    let packages_dir = dotfiles_root.join("packages");
+    let packages_dir = PathHelper::packages_dir();
 
     let file_info = Self::get_file_info(&packages_dir);
     let shell_info = Self::get_shell_info();
@@ -33,11 +33,11 @@ impl DiagnosticService {
   }
 
   /// 获取文件信息
-  fn get_file_info(packages_dir: &std::path::Path) -> HashMap<String, Value> {
+  fn get_file_info(_packages_dir: &std::path::Path) -> HashMap<String, Value> {
     let mut file_info = HashMap::new();
 
     for (manager, _) in SUPPORTED_MANAGERS {
-      let file_path = packages_dir.join(format!("{}.txt", manager));
+      let file_path = PathHelper::package_file(manager);
       file_info.insert(
         manager.to_string(),
         json!({

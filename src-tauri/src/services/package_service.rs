@@ -1,7 +1,8 @@
 use crate::constants::SUPPORTED_MANAGERS;
 use crate::models::{DiffResult, Package};
 use crate::utils::{
-  check_installed_packages, get_dotfiles_root, read_package_list, read_package_list_with_source,
+  check_installed_packages, is_command_missing_error, read_package_list,
+  read_package_list_with_source, PathHelper,
 };
 use std::collections::HashSet;
 
@@ -10,9 +11,7 @@ pub struct PackageService;
 impl PackageService {
   /// 获取指定包管理器的包列表
   pub fn get_packages(manager: &str) -> Result<Vec<Package>, String> {
-    let dotfiles_root = get_dotfiles_root();
-    let packages_dir = dotfiles_root.join("packages");
-    let file_path = packages_dir.join(format!("{}.txt", manager));
+    let file_path = PathHelper::package_file(manager);
 
     if !file_path.exists() {
       return Err(format!("Package file not found for manager: {}", manager));
@@ -25,7 +24,7 @@ impl PackageService {
     let installed_set = match check_installed_packages(manager) {
       Ok(set) => set,
       Err(err) => {
-        if Self::is_command_missing_error(&err) {
+        if is_command_missing_error(&err) {
           HashSet::new()
         } else {
           return Err(format!(
@@ -52,7 +51,7 @@ impl PackageService {
 
   /// 查看所有包管理器的差异
   pub fn get_diff() -> Result<Vec<DiffResult>, String> {
-    let packages_dir = get_dotfiles_root().join("packages");
+    let packages_dir = PathHelper::packages_dir();
 
     let mut results = Vec::new();
 
@@ -87,10 +86,5 @@ impl PackageService {
     }
 
     Ok(results)
-  }
-
-  /// 检查是否是命令缺失错误
-  fn is_command_missing_error(error: &str) -> bool {
-    error.contains("No such file or directory") || error.contains("command not found")
   }
 }
