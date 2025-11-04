@@ -265,7 +265,7 @@ pub fn check_pnpm_installed() -> Result<HashSet<String>, String> {
 
     if in_dependencies {
       // 依赖项行格式: "package-name version"
-      if let Some(first_word) = line.trim().split_whitespace().next() {
+      if let Some(first_word) = line.split_whitespace().next() {
         // 跳过空行和分隔符
         if !first_word.is_empty() && !first_word.starts_with('/') {
           installed.insert(first_word.to_string());
@@ -325,10 +325,10 @@ pub fn check_bun_installed() -> Result<HashSet<String>, String> {
       if let Some(after_tree) = line.split("──").nth(1) {
         let trimmed = after_tree.trim();
         // 处理版本号: packagename@version 或 @scope/packagename@version
-        let pkg_name = if trimmed.starts_with('@') {
+        let pkg_name = if let Some(stripped) = trimmed.strip_prefix('@') {
           // Scoped package: @scope/packagename@version
           // 找到第二个 @ 符号的位置
-          if let Some(second_at) = trimmed[1..].find('@') {
+          if let Some(second_at) = stripped.find('@') {
             &trimmed[..second_at + 1]
           } else {
             trimmed
@@ -445,7 +445,7 @@ pub fn check_luarocks_installed() -> Result<HashSet<String>, String> {
 
     if in_list && !line.trim().is_empty() {
       // luarocks 输出格式通常是包名开头，后面跟版本
-      if let Some(pkg_name) = line.trim().split_whitespace().next() {
+      if let Some(pkg_name) = line.split_whitespace().next() {
         installed.insert(pkg_name.to_string());
       }
     }

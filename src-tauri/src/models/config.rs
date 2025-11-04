@@ -3,18 +3,11 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// 用户配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
   /// 包管理器命令路径配置
+  #[serde(default)]
   pub command_paths: HashMap<String, String>,
-}
-
-impl Default for AppConfig {
-  fn default() -> Self {
-    Self {
-      command_paths: HashMap::new(),
-    }
-  }
 }
 
 impl AppConfig {
@@ -62,7 +55,7 @@ impl AppConfig {
 
   /// 获取命令路径，如果没有配置则返回None
   pub fn get_command_path(&self, command: &str) -> Option<PathBuf> {
-    self.command_paths.get(command).map(|s| PathBuf::from(s))
+    self.command_paths.get(command).map(PathBuf::from)
   }
 
   /// 设置命令路径

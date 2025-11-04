@@ -2,6 +2,8 @@
 mod commands;
 mod constants;
 mod models;
+mod operations;
+mod services;
 mod utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
