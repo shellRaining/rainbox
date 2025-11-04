@@ -1,8 +1,8 @@
 use crate::constants::SUPPORTED_MANAGERS;
 use crate::models::{DiffResult, Package};
 use crate::utils::{
-  check_installed_packages, is_command_missing_error, read_package_list,
-  read_package_list_with_source, PathHelper,
+  check_installed_packages, is_command_missing_error, package_file_exists, read_package_list,
+  read_packages_with_source, PathHelper,
 };
 use std::collections::HashSet;
 
@@ -11,14 +11,7 @@ pub struct PackageService;
 impl PackageService {
   /// 获取指定包管理器的包列表
   pub fn get_packages(manager: &str) -> Result<Vec<Package>, String> {
-    let file_path = PathHelper::package_file(manager);
-
-    if !file_path.exists() {
-      return Err(format!("Package file not found for manager: {}", manager));
-    }
-
-    // 使用带来源信息的读取方法
-    let packages_with_source = read_package_list_with_source(&file_path)?;
+    let packages_with_source = read_packages_with_source(manager)?;
 
     // 检查实际安装状态
     let installed_set = match check_installed_packages(manager) {
@@ -51,19 +44,15 @@ impl PackageService {
 
   /// 查看所有包管理器的差异
   pub fn get_diff() -> Result<Vec<DiffResult>, String> {
-    let packages_dir = PathHelper::packages_dir();
-
     let mut results = Vec::new();
 
     for (manager_name, display_name) in SUPPORTED_MANAGERS {
-      let file_path = packages_dir.join(format!("{}.txt", manager_name));
-
-      if !file_path.exists() {
+      if !package_file_exists(manager_name) {
         continue;
       }
 
       // 读取配置文件中的包列表
-      let declared_packages = match read_package_list(&file_path) {
+      let declared_packages = match read_package_list(&PathHelper::package_file(manager_name)) {
         Ok(packages) => packages,
         Err(_) => continue,
       };
