@@ -1,6 +1,6 @@
 use crate::models::{DiffResult, Package, PackageManager};
 use crate::operations::{OperationType, PackageOperation};
-use crate::services::{DiagnosticService, ManagerService, PackageService};
+use crate::services::{ManagerService, PackageService};
 
 /// 获取所有包管理器的状态
 #[tauri::command]
@@ -28,10 +28,4 @@ pub async fn install_packages(
 #[tauri::command]
 pub async fn get_diff() -> Result<Vec<DiffResult>, String> {
   PackageService::get_diff()
-}
-
-/// 诊断命令：获取路径信息和包管理器命令测试
-#[tauri::command]
-pub async fn get_diagnostic_info() -> Result<serde_json::Value, String> {
-  DiagnosticService::get_diagnostic_info()
 }

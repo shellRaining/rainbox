@@ -19,18 +19,18 @@ export function CommandPathSettings() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadConfig();
-  }, []);
+    const loadConfig = async () => {
+      try {
+        const cfg = await invoke<AppConfig>('get_config');
+        setConfig(cfg);
+      } catch (error) {
+        console.error('Failed to load config:', error);
+        toast.error(t('settings.command_path.toast.load_failed'));
+      }
+    };
 
-  const loadConfig = async () => {
-    try {
-      const cfg = await invoke<AppConfig>('get_config');
-      setConfig(cfg);
-    } catch (error) {
-      console.error('Failed to load config:', error);
-      toast.error(t('settings.command_path.toast.load_failed'));
-    }
-  };
+    void loadConfig();
+  }, [t]);
 
   const handleAutoDetect = async () => {
     setIsDetecting(true);

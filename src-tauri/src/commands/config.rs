@@ -29,7 +29,7 @@ pub async fn auto_detect_commands() -> Result<HashMap<String, String>, String> {
   let tasks: Vec<_> = commands
     .into_iter()
     .map(|cmd| async move {
-      let path = checker::get_command_path_for_diagnostic(cmd);
+      let path = checker::get_command_path(cmd);
       if path.exists() && path != std::path::PathBuf::from(cmd) {
         Some((cmd.to_string(), path.to_string_lossy().to_string()))
       } else {

@@ -62,7 +62,7 @@ fn get_shell_path() -> &'static str {
 
 /// 获取包管理器命令的完整路径
 /// 优先级：1. 用户配置  2. 自动检测  3. 命令名回退
-fn get_command_path(command: &str) -> PathBuf {
+pub fn get_command_path(command: &str) -> PathBuf {
   // 1. 首先检查用户配置
   if let Ok(config) = AppConfig::load() {
     if let Some(path) = config.get_command_path(command) {
@@ -125,11 +125,6 @@ fn get_command_path(command: &str) -> PathBuf {
 
   // 3. 最后回退到直接使用命令名
   PathBuf::from(command)
-}
-
-/// 导出给诊断功能使用的公开版本
-pub fn get_command_path_for_diagnostic(command: &str) -> PathBuf {
-  get_command_path(command)
 }
 
 /// 通过 shell 执行命令，确保继承完整环境变量

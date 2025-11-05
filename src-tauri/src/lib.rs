@@ -27,7 +27,6 @@ pub fn run() {
       commands::get_packages,
       commands::install_packages,
       commands::get_diff,
-      commands::get_diagnostic_info,
       commands::get_config,
       commands::save_config,
       commands::set_command_path,
