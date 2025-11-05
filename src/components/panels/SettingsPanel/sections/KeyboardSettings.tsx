@@ -52,9 +52,19 @@ export function KeyboardSettings() {
 
         <div className="space-y-2">
           <Label>{t('settings.keyboard.shortcuts_label')}</Label>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <div>• {t('settings.keyboard.search_shortcut')}</div>
-            <div>• {t('settings.keyboard.list_shortcut')}</div>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted border rounded">Ctrl+K</kbd>
+              <span className="text-muted-foreground/60">/</span>
+              <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted border rounded">Cmd+K</kbd>
+              <span>聚焦搜索框</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted border rounded">Ctrl+L</kbd>
+              <span className="text-muted-foreground/60">/</span>
+              <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted border rounded">Cmd+L</kbd>
+              <span>聚焦包列表</span>
+            </div>
           </div>
         </div>
       </CardContent>
