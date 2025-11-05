@@ -6,49 +6,42 @@ pub struct PackageOperation;
 #[derive(Debug, Clone, Copy)]
 pub enum OperationType {
   Install,
-  Update,
 }
 
 impl OperationType {
   fn as_str(&self) -> &'static str {
     match self {
       Self::Install => "install",
-      Self::Update => "update",
     }
   }
 
   fn progress_event(&self) -> &'static str {
     match self {
       Self::Install => "install-progress",
-      Self::Update => "update-progress",
     }
   }
 
   fn error_event(&self) -> &'static str {
     match self {
       Self::Install => "install-error",
-      Self::Update => "update-error",
     }
   }
 
   fn complete_event(&self) -> &'static str {
     match self {
       Self::Install => "install-complete",
-      Self::Update => "update-complete",
     }
   }
 
   fn complete_message(&self) -> &'static str {
     match self {
       Self::Install => "Installation finished",
-      Self::Update => "Update finished",
     }
   }
 
   fn start_message(&self) -> String {
     match self {
       Self::Install => "Installation started".to_string(),
-      Self::Update => "Update started".to_string(),
     }
   }
 }

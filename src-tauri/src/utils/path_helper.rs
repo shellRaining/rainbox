@@ -24,9 +24,4 @@ impl PathHelper {
   pub fn package_sync_script() -> PathBuf {
     Self::scripts_dir().join("package-sync.sh")
   }
-
-  /// 获取 export-packages.sh 脚本路径
-  pub fn export_packages_script() -> PathBuf {
-    Self::scripts_dir().join("export-packages.sh")
-  }
 }

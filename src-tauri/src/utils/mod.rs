@@ -1,6 +1,5 @@
 pub mod checker;
 pub mod error_helper;
-pub mod executor;
 pub mod package_reader;
 pub mod parser;
 pub mod path_helper;
