@@ -20,21 +20,26 @@ pub async fn set_command_path(command: String, path: String) -> Result<(), Strin
 
 #[tauri::command]
 pub async fn auto_detect_commands() -> Result<HashMap<String, String>, String> {
+  use crate::constants::PackageManagerType;
   use crate::utils::checker;
+  use futures::future::join_all;
 
-  let commands = vec![
-    "brew", "npm", "pnpm", "yarn", "bun", "cargo", "pip", "pipx", "go", "luarocks", "uv",
-  ];
+  let commands: Vec<&str> = PackageManagerType::all().iter().map(|pm| pm.id()).collect();
 
-  let mut detected = HashMap::new();
+  let tasks: Vec<_> = commands
+    .into_iter()
+    .map(|cmd| async move {
+      let path = checker::get_command_path_for_diagnostic(cmd);
+      if path.exists() && path != std::path::PathBuf::from(cmd) {
+        Some((cmd.to_string(), path.to_string_lossy().to_string()))
+      } else {
+        None
+      }
+    })
+    .collect();
 
-  for cmd in commands {
-    let path = checker::get_command_path_for_diagnostic(cmd);
-    if path.exists() && path != std::path::PathBuf::from(cmd) {
-      // 只保存找到完整路径的命令
-      detected.insert(cmd.to_string(), path.to_string_lossy().to_string());
-    }
-  }
+  let results = join_all(tasks).await;
+  let detected: HashMap<String, String> = results.into_iter().filter_map(|x| x).collect();
 
   Ok(detected)
 }
