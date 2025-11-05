@@ -9,8 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Loader2, Search, FolderOpen, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { type AppConfig, type CommandPathStatus, PACKAGE_MANAGERS } from '@/types/config';
+import { useTranslation } from 'react-i18next';
 
-export function CommandPathConfig() {
+export function CommandPathSettings() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<AppConfig>({ command_paths: {} });
   const [detected, setDetected] = useState<Record<string, string>>({});
   const [isDetecting, setIsDetecting] = useState(false);
@@ -26,7 +28,7 @@ export function CommandPathConfig() {
       setConfig(cfg);
     } catch (error) {
       console.error('Failed to load config:', error);
-      toast.error('Failed to load configuration');
+      toast.error(t('settings.command_path.toast.load_failed'));
     }
   };
 
@@ -37,10 +39,10 @@ export function CommandPathConfig() {
       setDetected(detectedPaths);
 
       const detectedCount = Object.keys(detectedPaths).length;
-      toast.success(`Detected ${detectedCount} command${detectedCount !== 1 ? 's' : ''}`);
+      toast.success(t('settings.command_path.toast.detected', { count: detectedCount }));
     } catch (error) {
       console.error('Auto-detect failed:', error);
-      toast.error('Failed to auto-detect commands');
+      toast.error(t('settings.command_path.toast.detect_failed'));
     } finally {
       setIsDetecting(false);
     }
@@ -58,10 +60,10 @@ export function CommandPathConfig() {
       };
       await invoke('save_config', { config: newConfig });
       setConfig(newConfig);
-      toast.success('Applied detected paths');
+      toast.success(t('settings.command_path.toast.applied'));
     } catch (error) {
       console.error('Failed to save config:', error);
-      toast.error('Failed to save configuration');
+      toast.error(t('settings.command_path.toast.apply_failed'));
     } finally {
       setIsSaving(false);
     }
@@ -77,10 +79,10 @@ export function CommandPathConfig() {
           [command]: path,
         },
       });
-      toast.success(`Set path for ${command}`);
+      toast.success(t('settings.command_path.toast.set_success', { command }));
     } catch (error) {
       console.error('Failed to set path:', error);
-      toast.error(`Failed to set path for ${command}`);
+      toast.error(t('settings.command_path.toast.set_failed', { command }));
     }
   };
 
@@ -107,10 +109,10 @@ export function CommandPathConfig() {
       const newConfig = { ...config, command_paths: newPaths };
       await invoke('save_config', { config: newConfig });
       setConfig(newConfig);
-      toast.success(`Cleared path for ${command}`);
+      toast.success(t('settings.command_path.toast.cleared', { command }));
     } catch (error) {
       console.error('Failed to clear path:', error);
-      toast.error(`Failed to clear path for ${command}`);
+      toast.error(t('settings.command_path.toast.clear_failed', { command }));
     }
   };
 
@@ -133,22 +135,20 @@ export function CommandPathConfig() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Command Path Configuration</CardTitle>
-            <CardDescription>
-              Configure paths to package manager commands for reliable detection
-            </CardDescription>
+            <CardTitle>{t('settings.command_path.title')}</CardTitle>
+            <CardDescription>{t('settings.command_path.description')}</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
               {isDetecting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Detecting...
+                  {t('settings.command_path.detecting')}
                 </>
               ) : (
                 <>
                   <Search className="mr-2 h-4 w-4" />
-                  Auto Detect
+                  {t('settings.command_path.auto_detect')}
                 </>
               )}
             </Button>
@@ -157,10 +157,10 @@ export function CommandPathConfig() {
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Applying...
+                    {t('settings.command_path.applying')}
                   </>
                 ) : (
-                  `Apply All Detected (${Object.keys(detected).length})`
+                  t('settings.command_path.apply_all', { count: Object.keys(detected).length })
                 )}
               </Button>
             )}
@@ -184,17 +184,17 @@ export function CommandPathConfig() {
                     {status.configured ? (
                       <Badge variant="default" className="gap-1">
                         <CheckCircle2 className="h-3 w-3" />
-                        Configured
+                        {t('settings.command_path.status.configured')}
                       </Badge>
                     ) : hasDetected ? (
                       <Badge variant="secondary" className="gap-1">
                         <AlertCircle className="h-3 w-3" />
-                        Detected
+                        {t('settings.command_path.status.detected')}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="gap-1">
                         <XCircle className="h-3 w-3" />
-                        Not Found
+                        {t('settings.command_path.status.not_found')}
                       </Badge>
                     )}
                   </div>
@@ -209,14 +209,14 @@ export function CommandPathConfig() {
                           setDetected({ ...detected, [command]: e.target.value });
                         }
                       }}
-                      placeholder={`Path to ${command} command`}
+                      placeholder={t('settings.command_path.placeholder', { command })}
                       className="font-mono text-sm select-text"
                     />
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => handleBrowse(command)}
-                      title="Browse..."
+                      title={t('settings.command_path.browse')}
                     >
                       <FolderOpen className="h-4 w-4" />
                     </Button>
@@ -229,7 +229,7 @@ export function CommandPathConfig() {
                         size="sm"
                         onClick={() => handleSetPath(command, detected[command])}
                       >
-                        Use Detected Path
+                        {t('settings.command_path.use_detected')}
                       </Button>
                     )}
                     {currentPath && (
@@ -238,12 +238,12 @@ export function CommandPathConfig() {
                         size="sm"
                         onClick={() => handleSetPath(command, currentPath)}
                       >
-                        Save
+                        {t('common.save')}
                       </Button>
                     )}
                     {status.configured && (
                       <Button variant="ghost" size="sm" onClick={() => handleClearPath(command)}>
-                        Clear
+                        {t('common.clear')}
                       </Button>
                     )}
                   </div>
@@ -254,11 +254,7 @@ export function CommandPathConfig() {
         </div>
 
         <div className="mt-6 rounded-lg bg-muted/50 p-4">
-          <p className="text-sm text-muted-foreground">
-            <strong>Tip:</strong> If auto-detect doesn't find all commands, you can manually set
-            paths. The app will try to detect commands automatically first, but configured paths
-            always take priority.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('settings.command_path.tip')}</p>
         </div>
       </CardContent>
     </Card>

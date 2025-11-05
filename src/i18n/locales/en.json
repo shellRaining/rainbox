@@ -111,6 +111,35 @@
       "browse": "Browse folder",
       "help_text": "Location of your package configuration files (*.txt)"
     },
+    "command_path": {
+      "title": "Command Path Configuration",
+      "description": "Configure paths to package manager commands for reliable detection",
+      "auto_detect": "Auto Detect",
+      "detecting": "Detecting...",
+      "apply_all": "Apply All Detected ({{count}})",
+      "applying": "Applying...",
+      "use_detected": "Use Detected Path",
+      "browse": "Browse...",
+      "status": {
+        "configured": "Configured",
+        "detected": "Detected",
+        "not_found": "Not Found"
+      },
+      "placeholder": "Path to {{command}} command",
+      "tip": "Tip: If auto-detect doesn't find all commands, you can manually set paths. The app will try to detect commands automatically first, but configured paths always take priority.",
+      "toast": {
+        "detected": "Detected {{count}} command",
+        "detected_plural": "Detected {{count}} commands",
+        "detect_failed": "Failed to auto-detect commands",
+        "applied": "Applied detected paths",
+        "apply_failed": "Failed to save configuration",
+        "set_success": "Set path for {{command}}",
+        "set_failed": "Failed to set path for {{command}}",
+        "cleared": "Cleared path for {{command}}",
+        "clear_failed": "Failed to clear path for {{command}}",
+        "load_failed": "Failed to load configuration"
+      }
+    },
     "advanced": {
       "title": "Advanced",
       "description": "Advanced settings and actions",

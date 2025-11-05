@@ -7,14 +7,25 @@ import type { PackageManager } from '@/types/package';
 
 type ActiveView = 'manager' | 'diff' | 'settings';
 
+export type SettingsCategory =
+  | 'appearance'
+  | 'language'
+  | 'keyboard'
+  | 'package-config'
+  | 'command-path'
+  | 'advanced'
+  | 'about';
+
 interface AppState {
   managers: PackageManager[];
   selectedManager: string | null;
+  selectedSettingsCategory: SettingsCategory;
   activeView: ActiveView;
   loading: boolean;
   error: string | null;
   logs: LogEntry[];
   setSelectedManager: (manager: string | null) => void;
+  setSelectedSettingsCategory: (category: SettingsCategory) => void;
   setActiveView: (view: ActiveView) => void;
   setLogs: (logs: LogEntry[] | ((prev: LogEntry[]) => LogEntry[])) => void;
   loadManagers: () => Promise<void>;
@@ -24,12 +35,15 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   managers: [],
   selectedManager: null,
+  selectedSettingsCategory: 'appearance',
   activeView: 'manager',
   loading: true,
   error: null,
   logs: [],
 
   setSelectedManager: (manager) => set({ selectedManager: manager }),
+
+  setSelectedSettingsCategory: (category) => set({ selectedSettingsCategory: category }),
 
   setActiveView: (view) => set({ activeView: view }),
 

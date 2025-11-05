@@ -75,11 +75,9 @@ export default function PackageManagerItem({
           <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full transition-all duration-500 ease-out"
-              style={{ 
+              style={{
                 width: `${progress}%`,
-                backgroundColor: missingCount > 0 
-                  ? 'hsl(38 92% 50%)' 
-                  : 'hsl(142 76% 36%)'
+                backgroundColor: missingCount > 0 ? 'hsl(38 92% 50%)' : 'hsl(142 76% 36%)',
               }}
             />
           </div>

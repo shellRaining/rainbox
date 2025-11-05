@@ -1,4 +1,5 @@
 import PackageManagerList from './PackageManagerList';
+import SettingsCategoryList from './SettingsCategoryList';
 import { useAppStore } from '@/stores/useAppStore';
 
 export default function SidebarContent() {
@@ -12,11 +13,7 @@ export default function SidebarContent() {
           <p className="text-sm">Diff view content</p>
         </div>
       )}
-      {activeView === 'settings' && (
-        <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p className="text-sm">Settings content</p>
-        </div>
-      )}
+      {activeView === 'settings' && <SettingsCategoryList />}
     </div>
   );
 }
