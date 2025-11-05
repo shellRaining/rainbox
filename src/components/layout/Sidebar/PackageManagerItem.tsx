@@ -24,7 +24,7 @@ export default function PackageManagerItem({
     <button
       onClick={onClick}
       className={cn(
-        'w-full rounded-lg hover:bg-accent/60 active:bg-accent/80 h-14 px-3',
+        'w-full rounded-lg hover:bg-accent/60 active:bg-accent/80 h-14 px-3 transition-all duration-200 ease-in-out',
         isSelected ? 'bg-accent border-2 border-primary/40' : 'border-2 border-transparent'
       )}
     >

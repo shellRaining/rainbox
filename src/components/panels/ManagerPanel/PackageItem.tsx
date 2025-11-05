@@ -48,7 +48,7 @@ const PackageItem = memo(({ pkg, index, searchQuery, isFocused }: PackageItemPro
       aria-label={`${pkg.name}, ${pkg.installed ? 'installed' : 'not installed'}${pkg.version ? `, version ${pkg.version}` : ''}`}
       className={cn(
         'group flex items-center justify-between px-3.5 py-3 rounded-lg cursor-pointer select-none package-item-enter',
-        'border-2',
+        'border-2 transition-all duration-200 ease-in-out',
         isFocused
           ? 'border-primary bg-accent/50'
           : 'border-border hover:border-border/60 hover:bg-accent/40',

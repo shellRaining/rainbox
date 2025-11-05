@@ -56,7 +56,7 @@ export default function PackageFilters({
         {searchQuery && (
           <button
             onClick={() => onSearchChange('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded-sm hover:bg-muted"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-all duration-200 ease-in-out p-0.5 rounded-sm hover:bg-muted"
             aria-label="Clear search"
           >
             <XCircle className="h-4 w-4" />
