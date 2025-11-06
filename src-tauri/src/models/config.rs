@@ -14,30 +14,62 @@ impl AppConfig {
   /// 加载配置文件
   pub fn load() -> Result<Self, String> {
     let config_path = Self::get_config_path()?;
+    log::debug!("Loading config from: {:?}", config_path);
 
     if !config_path.exists() {
+      log::info!("Config file does not exist, using default config");
       return Ok(Self::default());
     }
 
-    let content =
-      std::fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config: {}", e))?;
+    let content = std::fs::read_to_string(&config_path).map_err(|e| {
+      log::error!("Failed to read config from {:?}: {}", config_path, e);
+      format!("Failed to read config: {}", e)
+    })?;
 
-    serde_json::from_str(&content).map_err(|e| format!("Failed to parse config: {}", e))
+    let config: Self = serde_json::from_str(&content).map_err(|e| {
+      log::error!("Failed to parse config from {:?}: {}", config_path, e);
+      format!("Failed to parse config: {}", e)
+    })?;
+
+    log::info!(
+      "Successfully loaded config from {:?}, {} command paths configured",
+      config_path,
+      config.command_paths.len()
+    );
+
+    Ok(config)
   }
 
   /// 保存配置文件
   pub fn save(&self) -> Result<(), String> {
     let config_path = Self::get_config_path()?;
+    log::debug!("Saving config to: {:?}", config_path);
 
     // 确保配置目录存在
     if let Some(parent) = config_path.parent() {
-      std::fs::create_dir_all(parent).map_err(|e| format!("Failed to create config dir: {}", e))?;
+      std::fs::create_dir_all(parent).map_err(|e| {
+        log::error!("Failed to create config directory {:?}: {}", parent, e);
+        format!("Failed to create config dir: {}", e)
+      })?;
     }
 
-    let content = serde_json::to_string_pretty(self)
-      .map_err(|e| format!("Failed to serialize config: {}", e))?;
+    let content = serde_json::to_string_pretty(self).map_err(|e| {
+      log::error!("Failed to serialize config: {}", e);
+      format!("Failed to serialize config: {}", e)
+    })?;
 
-    std::fs::write(&config_path, content).map_err(|e| format!("Failed to write config: {}", e))
+    std::fs::write(&config_path, &content).map_err(|e| {
+      log::error!("Failed to write config to {:?}: {}", config_path, e);
+      format!("Failed to write config: {}", e)
+    })?;
+
+    log::info!(
+      "Successfully saved config to {:?}, {} command paths configured",
+      config_path,
+      self.command_paths.len()
+    );
+
+    Ok(())
   }
 
   /// 获取配置文件路径

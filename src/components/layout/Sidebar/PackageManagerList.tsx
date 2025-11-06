@@ -30,7 +30,7 @@ export default function PackageManagerList() {
           {loading
             ? [...(Array(skeletonCount) as unknown[])].map((_, i) => (
                 <div key={i} className="rounded-lg h-14 flex items-center px-3 gap-2.5">
-                  <Skeleton className="h-6 w-6 rounded flex-shrink-0" />
+                  <Skeleton className="h-6 w-6 rounded shrink-0" />
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between">
                       <Skeleton className="h-4 w-20" />

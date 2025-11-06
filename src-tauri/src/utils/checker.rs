@@ -75,6 +75,8 @@ fn get_shell_env() -> &'static Mutex<std::collections::HashMap<String, String>> 
 
 /// 在 shell 中执行命令并返回输出（使用缓存的环境变量）
 fn run_in_shell(shell_command: &str) -> Result<std::process::Output, std::io::Error> {
+  log::trace!("Running shell command: {}", shell_command);
+
   let env_lock = get_shell_env();
   let env_map = env_lock.lock().unwrap();
 
@@ -89,7 +91,27 @@ fn run_in_shell(shell_command: &str) -> Result<std::process::Output, std::io::Er
   }
 
   cmd.env("NONINTERACTIVE", "1");
-  cmd.output()
+
+  let start = std::time::Instant::now();
+  let result = cmd.output();
+  let elapsed = start.elapsed();
+
+  match &result {
+    Ok(output) => {
+      log::trace!(
+        "Shell command completed in {:?}, exit code: {:?}, stdout bytes: {}, stderr bytes: {}",
+        elapsed,
+        output.status.code(),
+        output.stdout.len(),
+        output.stderr.len()
+      );
+    }
+    Err(e) => {
+      log::error!("Shell command failed in {:?}: {}", elapsed, e);
+    }
+  }
+
+  result
 }
 
 /// 从用户的 shell 获取 PATH 环境变量
@@ -116,11 +138,20 @@ fn get_shell_path() -> &'static str {
 /// 获取包管理器命令的完整路径
 /// 优先级：1. 用户配置  2. 自动检测  3. 命令名回退
 pub fn get_command_path(command: &str) -> PathBuf {
+  log::debug!("Looking up command path for: {}", command);
+
   // 1. 首先检查用户配置
   if let Ok(config) = AppConfig::load() {
     if let Some(path) = config.get_command_path(command) {
       if path.exists() {
+        log::debug!("Found command '{}' in user config: {:?}", command, path);
         return path;
+      } else {
+        log::warn!(
+          "Configured path for '{}' does not exist: {:?}",
+          command,
+          path
+        );
       }
     }
   }
@@ -131,6 +162,7 @@ pub fn get_command_path(command: &str) -> PathBuf {
     if output.status.success() {
       let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
       if !path_str.is_empty() && PathBuf::from(&path_str).exists() {
+        log::debug!("Found command '{}' via which: {}", command, path_str);
         return PathBuf::from(path_str);
       }
     }
@@ -144,11 +176,16 @@ pub fn get_command_path(command: &str) -> PathBuf {
     }
     let full_path = PathBuf::from(dir).join(command);
     if full_path.exists() {
+      log::debug!("Found command '{}' in PATH: {:?}", command, full_path);
       return full_path;
     }
   }
 
   // 3. 最后回退到直接使用命令名
+  log::debug!(
+    "Command '{}' not found, using command name as fallback",
+    command
+  );
   PathBuf::from(command)
 }
 
@@ -175,10 +212,15 @@ fn execute_with_shell(
 
 /// 检查 Homebrew 包的安装状态
 pub fn check_brew_installed() -> Result<HashSet<String>, String> {
-  let output = execute_with_shell("brew", &["list", "--formula"])
-    .map_err(|e| format!("Failed to run brew: {}", e))?;
+  log::debug!("Checking Homebrew installed packages");
+
+  let output = execute_with_shell("brew", &["list", "--formula"]).map_err(|e| {
+    log::error!("Failed to run brew list: {}", e);
+    format!("Failed to run brew: {}", e)
+  })?;
 
   if !output.status.success() {
+    log::warn!("brew list returned non-zero exit code");
     return Ok(HashSet::new());
   }
 
@@ -189,6 +231,7 @@ pub fn check_brew_installed() -> Result<HashSet<String>, String> {
     .filter(|s| !s.is_empty())
     .collect();
 
+  log::debug!("Found {} Homebrew packages installed", installed.len());
   Ok(installed)
 }
 
@@ -503,10 +546,15 @@ pub fn check_uv_installed() -> Result<HashSet<String>, String> {
 
 /// 根据包管理器名称检查已安装的包
 pub fn check_installed_packages(manager: &str) -> Result<HashSet<String>, String> {
-  let manager_type = PackageManagerType::from_str(manager)
-    .ok_or_else(|| format!("Unknown package manager: {}", manager))?;
+  log::debug!("Checking installed packages for: {}", manager);
+  let start = std::time::Instant::now();
 
-  match manager_type {
+  let manager_type = PackageManagerType::from_str(manager).ok_or_else(|| {
+    log::error!("Unknown package manager: {}", manager);
+    format!("Unknown package manager: {}", manager)
+  })?;
+
+  let result = match manager_type {
     PackageManagerType::Brew => check_brew_installed(),
     PackageManagerType::BrewCask => check_brew_cask_installed(),
     PackageManagerType::Npm => check_npm_installed(),
@@ -519,5 +567,23 @@ pub fn check_installed_packages(manager: &str) -> Result<HashSet<String>, String
     PackageManagerType::Luarocks => check_luarocks_installed(),
     PackageManagerType::Go => check_go_installed(),
     PackageManagerType::Uv => check_uv_installed(),
+  };
+
+  let elapsed = start.elapsed();
+  match &result {
+    Ok(packages) => log::debug!(
+      "Checked installed packages for {} in {:?}, found {} packages",
+      manager,
+      elapsed,
+      packages.len()
+    ),
+    Err(e) => log::error!(
+      "Failed to check installed packages for {} in {:?}: {}",
+      manager,
+      elapsed,
+      e
+    ),
   }
+
+  result
 }
