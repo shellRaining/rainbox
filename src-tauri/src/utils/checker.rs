@@ -3,43 +3,100 @@ use crate::models::AppConfig;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 /// 缓存从 shell 获取的 PATH
 static SHELL_PATH: OnceLock<String> = OnceLock::new();
+
+/// 缓存的 shell 环境变量，避免重复 source 配置文件
+static SHELL_ENV: OnceLock<Mutex<std::collections::HashMap<String, String>>> = OnceLock::new();
+
+/// 获取当前 shell 类型
+fn get_shell() -> String {
+  std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string())
+}
+
+/// 根据 shell 类型构建配置文件加载前缀
+fn build_shell_source_prefix(shell: &str) -> &'static str {
+  if shell.contains("zsh") {
+    "test -f ~/.zshenv && source ~/.zshenv; \
+     test -n \"$ZDOTDIR\" && test -f \"$ZDOTDIR/.zshrc\" && source \"$ZDOTDIR/.zshrc\" || \
+     test -f ~/.zshrc && source ~/.zshrc"
+  } else if shell.contains("bash") {
+    "test -f ~/.bash_profile && source ~/.bash_profile || \
+     test -f ~/.bashrc && source ~/.bashrc"
+  } else {
+    ""
+  }
+}
+
+/// 获取或初始化缓存的 shell 环境变量
+fn get_shell_env() -> &'static Mutex<std::collections::HashMap<String, String>> {
+  SHELL_ENV.get_or_init(|| {
+    let shell = get_shell();
+    let prefix = build_shell_source_prefix(&shell);
+
+    // 构建命令：source 配置后打印所有环境变量
+    let env_cmd = if prefix.is_empty() {
+      "env".to_string()
+    } else {
+      format!("{}; env", prefix)
+    };
+
+    let mut env_map = std::collections::HashMap::new();
+
+    if let Ok(output) = Command::new(&shell)
+      .arg("-l")
+      .arg("-c")
+      .arg(&env_cmd)
+      .env("NONINTERACTIVE", "1")
+      .output()
+    {
+      if output.status.success() {
+        let env_output = String::from_utf8_lossy(&output.stdout);
+        for line in env_output.lines() {
+          if let Some((key, value)) = line.split_once('=') {
+            env_map.insert(key.to_string(), value.to_string());
+          }
+        }
+      }
+    }
+
+    // 如果没有获取到环境变量，至少包含当前的 PATH
+    if env_map.is_empty() {
+      if let Ok(path) = std::env::var("PATH") {
+        env_map.insert("PATH".to_string(), path);
+      }
+    }
+
+    Mutex::new(env_map)
+  })
+}
+
+/// 在 shell 中执行命令并返回输出（使用缓存的环境变量）
+fn run_in_shell(shell_command: &str) -> Result<std::process::Output, std::io::Error> {
+  let env_lock = get_shell_env();
+  let env_map = env_lock.lock().unwrap();
+
+  let shell = get_shell();
+
+  let mut cmd = Command::new(&shell);
+  cmd.arg("-l").arg("-c").arg(shell_command);
+
+  // 使用缓存的环境变量
+  for (key, value) in env_map.iter() {
+    cmd.env(key, value);
+  }
+
+  cmd.env("NONINTERACTIVE", "1");
+  cmd.output()
+}
 
 /// 从用户的 shell 获取 PATH 环境变量
 /// 显式加载 shell 配置文件
 fn get_shell_path() -> &'static str {
   SHELL_PATH.get_or_init(|| {
-    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-
-    // 构建命令：source 配置文件然后输出 PATH
-    // 支持多种 shell 配置文件位置
-    let source_cmd = if shell.contains("zsh") {
-      // zsh: 尝试 ZDOTDIR/.zshrc 或 ~/.zshrc
-      "test -f ~/.zshenv && source ~/.zshenv; \
-       test -n \"$ZDOTDIR\" && test -f \"$ZDOTDIR/.zshrc\" && source \"$ZDOTDIR/.zshrc\" || \
-       test -f ~/.zshrc && source ~/.zshrc; \
-       echo $PATH"
-        .to_string()
-    } else if shell.contains("bash") {
-      // bash: 尝试 ~/.bash_profile 或 ~/.bashrc
-      "test -f ~/.bash_profile && source ~/.bash_profile || \
-       test -f ~/.bashrc && source ~/.bashrc; \
-       echo $PATH"
-        .to_string()
-    } else {
-      // 其他 shell：直接输出 PATH
-      "echo $PATH".to_string()
-    };
-
-    let output = Command::new(&shell)
-      .arg("-l")
-      .arg("-c")
-      .arg(&source_cmd)
-      .env("NONINTERACTIVE", "1")  // 禁用交互式功能
-      .output();
+    let output = run_in_shell("echo $PATH");
 
     match output {
       Ok(output) if output.status.success() => {
@@ -47,15 +104,11 @@ fn get_shell_path() -> &'static str {
         if !path.is_empty() {
           return path;
         }
-        // 如果结果为空，回退到当前 PATH
         std::env::var("PATH")
           .unwrap_or_else(|_| "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".to_string())
       }
-      _ => {
-        // 回退：使用当前进程的 PATH
-        std::env::var("PATH")
-          .unwrap_or_else(|_| "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".to_string())
-      }
+      _ => std::env::var("PATH")
+        .unwrap_or_else(|_| "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin".to_string()),
     }
   })
 }
@@ -72,37 +125,9 @@ pub fn get_command_path(command: &str) -> PathBuf {
     }
   }
 
-  // 2. 尝试自动检测
-  let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-
-  // 构建 which 命令，先 source 配置再查找
-  let which_cmd = if shell.contains("zsh") {
-    format!(
-      "test -f ~/.zshenv && source ~/.zshenv; \
-       test -n \"$ZDOTDIR\" && test -f \"$ZDOTDIR/.zshrc\" && source \"$ZDOTDIR/.zshrc\" || \
-       test -f ~/.zshrc && source ~/.zshrc; \
-       which {}",
-      command
-    )
-  } else if shell.contains("bash") {
-    format!(
-      "test -f ~/.bash_profile && source ~/.bash_profile || \
-       test -f ~/.bashrc && source ~/.bashrc; \
-       which {}",
-      command
-    )
-  } else {
-    format!("which {}", command)
-  };
-
-  let which_result = Command::new(&shell)
-    .arg("-l")
-    .arg("-c")
-    .arg(&which_cmd)
-    .env("NONINTERACTIVE", "1")
-    .output();
-
-  if let Ok(output) = which_result {
+  // 2. 尝试使用 which 命令自动检测
+  let which_cmd = format!("which {}", command);
+  if let Ok(output) = run_in_shell(&which_cmd) {
     if output.status.success() {
       let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
       if !path_str.is_empty() && PathBuf::from(&path_str).exists() {
@@ -133,8 +158,6 @@ fn execute_with_shell(
   command: &str,
   args: &[&str],
 ) -> Result<std::process::Output, std::io::Error> {
-  let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
-
   // 构建完整命令
   let mut full_cmd = String::from(command);
   for arg in args {
@@ -147,32 +170,7 @@ fn execute_with_shell(
     }
   }
 
-  // 构建 shell 命令：先 source 配置，再执行命令
-  let shell_cmd = if shell.contains("zsh") {
-    format!(
-      "test -f ~/.zshenv && source ~/.zshenv; \
-       test -n \"$ZDOTDIR\" && test -f \"$ZDOTDIR/.zshrc\" && source \"$ZDOTDIR/.zshrc\" || \
-       test -f ~/.zshrc && source ~/.zshrc; \
-       {}",
-      full_cmd
-    )
-  } else if shell.contains("bash") {
-    format!(
-      "test -f ~/.bash_profile && source ~/.bash_profile || \
-       test -f ~/.bashrc && source ~/.bashrc; \
-       {}",
-      full_cmd
-    )
-  } else {
-    full_cmd
-  };
-
-  Command::new(&shell)
-    .arg("-l")
-    .arg("-c")
-    .arg(&shell_cmd)
-    .env("NONINTERACTIVE", "1")
-    .output()
+  run_in_shell(&full_cmd)
 }
 
 /// 检查 Homebrew 包的安装状态
