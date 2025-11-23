@@ -8,7 +8,7 @@ pub async fn get_managers_status() -> Result<Vec<PackageManager>, String> {
   let start = std::time::Instant::now();
   log::info!("Command 'get_managers_status' started");
 
-  let result = ManagerService::get_all_status();
+  let result = ManagerService::get_all_status().await;
 
   let elapsed = start.elapsed();
   match &result {

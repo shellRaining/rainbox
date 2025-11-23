@@ -1,3 +1,4 @@
+use crate::cache::PackageCache;
 use crate::constants::SUPPORTED_MANAGERS;
 use crate::models::{DiffResult, Package};
 use crate::utils::{
@@ -5,6 +6,14 @@ use crate::utils::{
   read_packages_with_source, PathHelper,
 };
 use std::collections::HashSet;
+use std::sync::OnceLock;
+
+// 全局缓存实例
+static INSTALLED_CACHE: OnceLock<PackageCache<HashSet<String>>> = OnceLock::new();
+
+fn get_cache() -> &'static PackageCache<HashSet<String>> {
+  INSTALLED_CACHE.get_or_init(|| PackageCache::new(10))
+}
 
 pub struct PackageService;
 
@@ -20,29 +29,40 @@ impl PackageService {
       manager
     );
 
-    // 检查实际安装状态
-    let installed_set = match check_installed_packages(manager) {
-      Ok(set) => {
-        log::debug!("Found {} installed packages for {}", set.len(), manager);
-        set
-      }
-      Err(err) => {
-        if is_command_missing_error(&err) {
-          log::warn!(
-            "Command not found for {}, assuming no packages installed",
-            manager
-          );
-          HashSet::new()
-        } else {
-          log::error!(
-            "Failed to check installed packages for {}: {}",
-            manager,
-            err
-          );
-          return Err(format!(
-            "Failed to check installed packages for {}: {}",
-            manager, err
-          ));
+    // 尝试从缓存获取已安装包列表
+    let cache = get_cache();
+    let cache_key = format!("installed_{}", manager);
+
+    let installed_set = if let Some(cached) = cache.get(&cache_key) {
+      log::debug!("Using cached installed packages for {}", manager);
+      cached
+    } else {
+      // 检查实际安装状态
+      match check_installed_packages(manager) {
+        Ok(set) => {
+          log::debug!("Found {} installed packages for {}", set.len(), manager);
+          // 存入缓存
+          cache.set(cache_key, set.clone());
+          set
+        }
+        Err(err) => {
+          if is_command_missing_error(&err) {
+            log::warn!(
+              "Command not found for {}, assuming no packages installed",
+              manager
+            );
+            HashSet::new()
+          } else {
+            log::error!(
+              "Failed to check installed packages for {}: {}",
+              manager,
+              err
+            );
+            return Err(format!(
+              "Failed to check installed packages for {}: {}",
+              manager, err
+            ));
+          }
         }
       }
     };

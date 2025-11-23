@@ -1,4 +1,5 @@
 // Declare modules
+mod cache;
 mod commands;
 mod constants;
 mod models;
